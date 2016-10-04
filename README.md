@@ -47,3 +47,5 @@ The bundle will automatically be re-created every time you change a source file.
 Pipe tiles by surt, and released into the public domain on [OpenGameArt.com](http://opengameart.org/content/plums)
 
 Game framework HTML5/CSS3/Javascirpt code was written by course instructor [Nathan Bean](http://nathanhbean.com), and also released under the [CC-A-SA 3.0 License](https://creativecommons.org/licenses/by-sa/3.0/)
+Cursor by Amir027 and released in public domain on [OpenGameArt.com](http://opengameart.org/users/amir027)
+Background Music by ShadyDave in public domain on [freesound.org](freesound.org/people/ShadyDave/)

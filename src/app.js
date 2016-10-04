@@ -1,17 +1,40 @@
 "use strict";
 
 /* Classes */
+const Player  = require('./player');
 const Game = require('./game');
-
+const Grid = require('./grid');
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
 var image = new Image();
-image.src = 'assets/pipes.png';
+var player = new Player();
+var grid = new Grid();
+image.src = "./assets/pipes.png";
 
-canvas.onclick = function(event) {
+
+var background = new Audio();
+background.src = "./assets/background.mp3";
+background.play();
+var gameOver = new Audio();
+gameOver.src = "./assets/gameOver.wav";
+var nextLevel = new Audio();
+nextLevel.src = "./assets/nextLevel.wav";
+var noplace = new Audio();
+noplace.src = "./assets/noplace.wav";
+var place = new Audio();
+place.src = "./assets/place.wav";
+var rotate = new Audio();
+rotate.src = "./assets/rotate.wav";
+
+
+canvas.onclickCallBack = function(event) {
   event.preventDefault();
-  // TODO: Place or rotate pipe tile
+  if(event.which == 1)
+        noplace.play();
+  else if (event.which ==3)
+        //Implement rotate
+        rotate.play();
 }
 
 /**
@@ -34,9 +57,13 @@ masterLoop(performance.now());
  * @param {DOMHighResTimeStamp} elapsedTime indicates
  * the number of milliseconds passed since the last frame.
  */
-function update(elapsedTime) {
-
+function update(elapsedTme) {
   // TODO: Advance the fluid
+  player.update();
+  if(player.lives < 1){ //gameOver.play();
+                        background.pause();
+                        console.log(player.lives);}
+  grid.update();
 }
 
 /**
@@ -47,9 +74,10 @@ function update(elapsedTime) {
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
 function render(elapsedTime, ctx) {
-  ctx.fillStyle = "#777777";
+  ctx.fillStyle = "blue";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  grid.render(elapsedTime, ctx);
+  player.render(elapsedTime, ctx);
 
   // TODO: Render the board
-
 }
