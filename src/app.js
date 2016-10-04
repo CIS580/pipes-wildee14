@@ -31,9 +31,9 @@ rotate.src = "./assets/rotate.wav";
 canvas.onclick = function(event) {
   event.preventDefault();
   if(event.which == 1){
-    if(grid.checkIfDefined(event.offsetX, event.offsetY)){
+    if(!grid.checkIfDefined(event.offsetX, event.offsetY)){
       place.play();
-      console.log("true");
+      grid.place(event.offsetX, event.offsetY);
     }
     else {
       console.log("miss" + " "+event.offsetX, event.offsetY);
@@ -85,7 +85,7 @@ function update(elapsedTme) {
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
 function render(elapsedTime, ctx) {
-  ctx.fillStyle = "blue";
+  ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   grid.render(elapsedTime, ctx);
   player.render(elapsedTime, ctx);

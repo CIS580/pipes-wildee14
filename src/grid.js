@@ -20,7 +20,7 @@ function Grid(wid, height) {
   this.x = Math.floor(wid /cell);
   this.y = Math.floor(height /cell);
   var self = this;
-
+  this.userPipes = [];
   this.pipe = new Image();
   this.pipe.src = "./assets/pipes.png";
   /*
@@ -33,6 +33,16 @@ function Grid(wid, height) {
   [4] [1]=all but left [2]=all but bottom
   */
 
+  for (var i = 0; i < 10; i++) {
+    //make sure random pipes are valid
+    while(this.userPipes[i] == undefined || this.userPipes[i] =={x:3,y:3} ||
+          this.userPipes[i] == {x:0,y:4} || this.userPipes[i] =={x:3,y:4}){
+            this.userPipes[i] = {x:(Math.floor(Math.random()*4)),
+                                 y:(Math.floor(Math.random()*5))};
+          };
+    console.log(this.userPipes[i]);
+  }
+
   this.grid = [];
   for (var y = 0; y < this.y; y++) {
     this.grid[y] = [];
@@ -42,7 +52,7 @@ function Grid(wid, height) {
   }
   this.grid[0][0] = {x:0,y:3}; //starter pipe
   this.grid[3][0] = {x:2,y:2}; //ender pipe
-
+  this.grid[0][5] = this.userPipes[this.userPipes.length-1]; //next pipe
 }
 
 /**
@@ -51,12 +61,51 @@ function Grid(wid, height) {
  */
 Grid.prototype.update = function(time) {
 }
-Grid.prototype.checkIfDefined = function (x, y) {
-  if (x < cell && y < cell) {
-    return true
+
+
+
+Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
+  for (var gridY = 0; gridY < this.y; gridY++) {
+    for (var gridX = 0; gridX < this.x; gridX++) {
+      if (
+        //check if in bounds of x
+        (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
+        //check if in bounds of y
+        (this.y*gridY) < pointerY && ((this.y*(gridX+1))) > pointerY &&
+        //check if defined
+        this.grid[gridY][gridX])
+        {
+            console.log(gridY + " "+gridX + " "+pointerY+" "+pointerX);
+            return true;
+        }
+    }
   }
-  else return false;
-};
+  return false;
+}
+
+Grid.prototype.place = function (pointerX, pointerY) {
+  if(this.userPipes.length > 1){
+    for (var gridY = 0; gridY < this.y; gridY++) {
+      for (var gridX = 0; gridX < this.x; gridX++) {
+        if (
+          //check if in bounds of x
+          (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
+          //check if in bounds of y
+          (this.y*gridY) < pointerY && ((this.y*(gridX+1))) > pointerY &&
+          !this.grid[gridY][gridX])
+          {
+              this.grid[gridY][gridX] = this.userPipes.pop();
+              this.grid[0][5] = this.userPipes[this.userPipes.length-1]; //next pipe
+              return;
+          }
+      }
+    }
+  }else{
+    console.log("out of pipes");
+  }
+}
+
+
 
 /**
  * @function renders the Grid into the provided context
@@ -70,21 +119,28 @@ Grid.prototype.render = function(time, ctx) {
         ctx.drawImage(this.pipe,
                       31.75*this.grid[y][x].x,32*this.grid[y][x].y, 31.75,32,
                       x*this.x,y*this.y, this.x,this.y);
+
+        ctx.strokeStyle="red";
+        ctx.strokeRect(x*this.x, y*this.y, this.x, this.y);
+      }else{
+        ctx.strokeStyle="black";
+        ctx.strokeRect(x*this.x, y*this.y, this.x, this.y);
+
       }
 
-      ctx.strokeRect(x*this.x, y*this.y, this.x, this.y);
 
     }
   }
 ctx.font="30px Verdana";
-// Create gradient
-var gradient=ctx.createLinearGradient(0,0,this.width,0);
-gradient.addColorStop("0","white");
-gradient.addColorStop("0.5","blue");
-gradient.addColorStop("1.0","yellow");
-// Fill with gradient
+
+
+// gradient
+var gradient=ctx.createLinearGradient(0,0,this.width,0); gradient.addColorStop("0","black");
+// Fields
 ctx.fillStyle=gradient;
 ctx.fillText("Start",15,40);
 ctx.fillText("End",15,320);
+ctx.fillText("Next Pipe",495,30);
+
 
 }
