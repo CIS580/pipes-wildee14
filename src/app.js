@@ -9,7 +9,7 @@ var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
 var image = new Image();
 var player = new Player();
-var grid = new Grid();
+var grid = new Grid(canvas.width, canvas.height);
 image.src = "./assets/pipes.png";
 
 
@@ -28,13 +28,24 @@ var rotate = new Audio();
 rotate.src = "./assets/rotate.wav";
 
 
-canvas.onclickCallBack = function(event) {
+canvas.onclick = function(event) {
   event.preventDefault();
-  if(event.which == 1)
-        noplace.play();
-  else if (event.which ==3)
-        //Implement rotate
-        rotate.play();
+  if(event.which == 1){
+    if(grid.checkIfDefined(event.offsetX, event.offsetY)){
+      place.play();
+      console.log("true");
+    }
+    else {
+      console.log("miss" + " "+event.offsetX, event.offsetY);
+      noplace.play();
+    }
+  }
+
+  else if (event.which ==3){
+    //Implement rotate
+    rotate.play();
+  }
+
 }
 
 /**
