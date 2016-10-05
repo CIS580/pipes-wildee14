@@ -43,7 +43,14 @@ canvas.onclick = function(event) {
 
   else if (event.which ==3){
     //Implement rotate
-    rotate.play();
+    if(grid.checkIfDefined(event.offsetX, event.offsetY)){
+      rotate.play();
+      grid.rotate(event.offsetX, event.offsetY);
+    }
+    else {
+      console.log("miss" + " "+event.offsetX, event.offsetY);
+      noplace.play();
+    }
   }
 
 }

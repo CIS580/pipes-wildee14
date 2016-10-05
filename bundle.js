@@ -44,7 +44,14 @@ canvas.onclick = function(event) {
 
   else if (event.which ==3){
     //Implement rotate
-    rotate.play();
+    if(grid.checkIfDefined(event.offsetX, event.offsetY)){
+      rotate.play();
+      grid.rotate(event.offsetX, event.offsetY);
+    }
+    else {
+      console.log("miss" + " "+event.offsetX, event.offsetY);
+      noplace.play();
+    }
   }
 
 }
@@ -158,7 +165,6 @@ Game.prototype.loop = function(newTime) {
 const MS_PER_FRAME = 1000/8;
 const cell = 10;
 
-
 /**
  * @module exports the Grid class
  */
@@ -170,8 +176,11 @@ module.exports = exports = Grid;
  * @param {Postition} position object specifying an x and y
  */
 function Grid(wid, height) {
+  this.dead = false;
+  this.level = 1;
   this.width = wid;
   this.height = height;
+  this.water = {x:40,y:0}
   this.x = Math.floor(wid /cell);
   this.y = Math.floor(height /cell);
   var self = this;
@@ -207,7 +216,7 @@ function Grid(wid, height) {
   }
   this.grid[0][0] = {x:0,y:3}; //starter pipe
   this.grid[3][0] = {x:2,y:2}; //ender pipe
-  this.grid[0][5] = this.userPipes[this.userPipes.length-1]; //next pipe
+  this.grid[0][8] = this.userPipes[this.userPipes.length-1]; //next pipe
 }
 
 /**
@@ -215,8 +224,35 @@ function Grid(wid, height) {
  * {DOMHighResTimeStamp} time the elapsed time since the last frame
  */
 Grid.prototype.update = function(time) {
+  if(!this.dead)this.water.x+=.25;
+  if (!this.checkIfDefined(this.water.x,this.water.y)) {console.log(this.userPipes[1][0]); this.endGame();}
 }
 
+Grid.prototype.endGame = function () {
+  document.getElementById('score').innerHTML = "Game Over! Level "+this.level;
+  this.dead = true;
+};
+
+Grid.prototype.rotate = function (x,y) {
+  if(this.userPipes.length > 0){
+    for (var gridY = 0; gridY < this.y; gridY++) {
+      for (var gridX = 0; gridX < this.x; gridX++) {
+        if (
+          //check if in bounds of x
+          (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
+          //check if in bounds of y
+          (this.y*gridY) < pointerY && ((this.y*(gridY+1))) > pointerY)
+          {
+              this.grid[gridY][gridX].x++;
+              return;
+          }
+      }
+    }
+  }else{
+    console.log("out of pipes");
+  }
+
+};
 
 
 Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
@@ -224,13 +260,12 @@ Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
     for (var gridX = 0; gridX < this.x; gridX++) {
       if (
         //check if in bounds of x
-        (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
+        (this.x*gridX) <= pointerX && (this.x*(gridX+1)) >= pointerX &&
         //check if in bounds of y
-        (this.y*gridY) < pointerY && ((this.y*(gridX+1))) > pointerY &&
+        (this.y*gridY) <= pointerY && ((this.y*(gridX+1))) >= pointerY &&
         //check if defined
         this.grid[gridY][gridX])
         {
-            console.log(gridY + " "+gridX + " "+pointerY+" "+pointerX);
             return true;
         }
     }
@@ -239,18 +274,19 @@ Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
 }
 
 Grid.prototype.place = function (pointerX, pointerY) {
-  if(this.userPipes.length > 1){
+  if(this.userPipes.length > 0){
     for (var gridY = 0; gridY < this.y; gridY++) {
       for (var gridX = 0; gridX < this.x; gridX++) {
         if (
           //check if in bounds of x
           (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
           //check if in bounds of y
-          (this.y*gridY) < pointerY && ((this.y*(gridX+1))) > pointerY &&
+          (this.y*gridY) < pointerY && ((this.y*(gridY+1))) > pointerY &&
           !this.grid[gridY][gridX])
           {
               this.grid[gridY][gridX] = this.userPipes.pop();
-              this.grid[0][5] = this.userPipes[this.userPipes.length-1]; //next pipe
+              console.log(gridY+" "+gridX);
+              this.grid[0][8] = this.userPipes[this.userPipes.length-1]; //next pipe
               return;
           }
       }
@@ -260,14 +296,16 @@ Grid.prototype.place = function (pointerX, pointerY) {
   }
 }
 
-
-
 /**
  * @function renders the Grid into the provided context
  * {DOMHighResTimeStamp} time the elapsed time since the last frame
  * {CanvasRenderingContext2D} ctx the context to render into
  */
 Grid.prototype.render = function(time, ctx) {
+  ctx.fillStyle="blue";
+  ctx.fillRect(0,0,this.x,this.y);
+  ctx.fillRect(this.water.x,this.water.y,15,15);
+
   for (var y = 0; y < this.y; y++) {
     for (var x = 0; x < this.x; x++) {
       if(this.grid[y][x]){
@@ -280,13 +318,10 @@ Grid.prototype.render = function(time, ctx) {
       }else{
         ctx.strokeStyle="black";
         ctx.strokeRect(x*this.x, y*this.y, this.x, this.y);
-
       }
-
-
     }
   }
-ctx.font="30px Verdana";
+  ctx.font="30px Verdana";
 
 
 // gradient
@@ -295,9 +330,15 @@ var gradient=ctx.createLinearGradient(0,0,this.width,0); gradient.addColorStop("
 ctx.fillStyle=gradient;
 ctx.fillText("Start",15,40);
 ctx.fillText("End",15,320);
-ctx.fillText("Next Pipe",495,30);
+ctx.fillText("Next Pipe",795,50);
 
-
+if(this.dead){
+  ctx.font = "40pt Times New Roman";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 0.1;
+  ctx.fillStyle = "black";
+  ctx.fillText("Game Over!",450, 450 );
+}
 }
 
 },{}],4:[function(require,module,exports){
