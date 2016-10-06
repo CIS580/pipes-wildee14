@@ -15,10 +15,11 @@ module.exports = exports = Grid;
  */
 function Grid(wid, height) {
   this.dead = false;
+  this.direction = "right";
   this.level = 1;
   this.width = wid;
   this.height = height;
-  this.water = {x:40,y:0}
+  this.water = {x:1,y:0}
   this.x = Math.floor(wid /cell);
   this.y = Math.floor(height /cell);
   var self = this;
@@ -34,14 +35,17 @@ function Grid(wid, height) {
   [3] [0]=flat vert down [1]=all but top [2]=all but right
   [4] [1]=all but left [2]=all but bottom
   */
+  this.lowLeft = {x:0,y:4};
+  this.lowRight = {x:3,y:4};
+  this.lowRightU = {x:3,y:3};
 
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < 20; i++) {
     //make sure random pipes are valid
-    while(this.userPipes[i] == undefined || this.userPipes[i] =={x:3,y:3} ||
-          this.userPipes[i] == {x:0,y:4} || this.userPipes[i] =={x:3,y:4}){
+    while(this.userPipes[i] == undefined || this.userPipes[i].y>2){
             this.userPipes[i] = {x:(Math.floor(Math.random()*4)),
                                  y:(Math.floor(Math.random()*5))};
-          };
+          }
+
     console.log(this.userPipes[i]);
   }
 
@@ -52,8 +56,8 @@ function Grid(wid, height) {
       this.grid[y][x] = undefined;
     }
   }
-  this.grid[0][0] = {x:0,y:3}; //starter pipe
-  this.grid[3][0] = {x:2,y:2}; //ender pipe
+  this.grid[0][0] = {x:3,y:0}; //starter pipe
+  this.grid[3][0] = {x:3,y:0}; //ender pipe
   this.grid[0][8] = this.userPipes[this.userPipes.length-1]; //next pipe
 }
 
@@ -62,9 +66,64 @@ function Grid(wid, height) {
  * {DOMHighResTimeStamp} time the elapsed time since the last frame
  */
 Grid.prototype.update = function(time) {
-  if(!this.dead)this.water.x+=.25;
-  if (!this.checkIfDefined(this.water.x,this.water.y)) {console.log(this.userPipes[1][0]); this.endGame();}
+  var speed = .15*this.level;
+  if(!this.dead){
+    switch(this.direction){
+      case ("right"):
+        this.water.x+=speed;
+        break;
+      case "left":
+        this.water.x-=speed;
+        break;
+      case "up":
+        this.water.y-=speed;
+        break;
+      case "down":
+        this.water.y+=speed;
+        break;
+      default:
+        break;
+    }
+
+  }
+  if (!this.checkIfDefined(this.water.x,this.water.y)) {console.log(this.water.y); this.endGame();}
+  if (this.inEndPipe(this.water.x,this.water.y)) {this.nextLevel();}
+  this.updatePosition();
 }
+
+Grid.prototype.inEndPipe = function (pointerX,pointerY) {
+  if (
+        //check if in bounds of x
+        0 < pointerX && 95 > pointerX &&
+        //check if in bounds of y
+        4*(this.y) < pointerY && 5*this.y > pointerY)
+        {
+            return true;
+        }
+  return false;
+}
+
+Grid.prototype.nextLevel = function () {
+  for (var i = 0; i < 20; i++) {
+    //make sure random pipes are valid
+    while(this.userPipes[i] == undefined || this.userPipes[i] ==this.lowRightU ||
+          this.userPipes[i] == this.lowLeft || this.userPipes[i] == this.lowRight ){
+            this.userPipes[i] = {x:(Math.floor(Math.random()*4)),
+                                 y:(Math.floor(Math.random()*5))};
+          }
+  }
+  this.grid = [];
+  for (var y = 0; y < this.y; y++) {
+    this.grid[y] = [];
+    for (var x = 0; x < this.x; x++) {
+      this.grid[y][x] = undefined;
+    }
+  }
+  this.grid[0][0] = {x:3,y:0}; //starter pipe
+  this.grid[3][0] = {x:2,y:2}; //ender pipe
+  this.grid[0][8] = this.userPipes[this.userPipes.length-1]; //next pipe
+  this.level++;
+};
 
 Grid.prototype.endGame = function () {
   document.getElementById('score').innerHTML = "Game Over! Level "+this.level;
@@ -89,18 +148,16 @@ Grid.prototype.rotate = function (x,y) {
   }else{
     console.log("out of pipes");
   }
-
 };
-
 
 Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
   for (var gridY = 0; gridY < this.y; gridY++) {
     for (var gridX = 0; gridX < this.x; gridX++) {
       if (
         //check if in bounds of x
-        (this.x*gridX) <= pointerX && (this.x*(gridX+1)) >= pointerX &&
+        (this.x*gridX) <= (pointerX) && (this.x*(gridX+1)) > (pointerX) &&
         //check if in bounds of y
-        (this.y*gridY) <= pointerY && ((this.y*(gridX+1))) >= pointerY &&
+        (this.y*gridY) <= (pointerY) && ((this.y*(gridY+1))) > (pointerY) &&
         //check if defined
         this.grid[gridY][gridX])
         {
@@ -111,15 +168,70 @@ Grid.prototype.checkIfDefined = function (pointerX, pointerY) {
   return false;
 }
 
+Grid.prototype.updatePosition = function () {
+  for (var gridY = 0; gridY < this.y; gridY++) {
+    for (var gridX = 0; gridX < this.x; gridX++) {
+      if (
+        //check if in bounds of x
+        (this.x*gridX) <= this.water.x && (this.x*(gridX+1)) > this.water.x &&
+        //check if in bounds of y
+        (this.y*gridY) <= this.water.y && ((this.y*(gridX+1))) > this.water.y &&
+         this.grid[gridY][gridX])
+        {
+          //Check direction
+          //Vertical Pipes
+          if ((this.grid[gridY][gridX].x == 0 && this.grid[gridY][gridX].y== 1) ||
+              (this.grid[gridY][gridX].x == 0 && this.grid[gridY][gridX].y== 2)||
+              (this.grid[gridY][gridX].x == 0 && this.grid[gridY][gridX].y== 3)||
+              (this.grid[gridY][gridX].x == 1 && this.grid[gridY][gridX].y==2)||
+              (this.grid[gridY][gridX].x == 2 && this.grid[gridY][gridX].y==3))
+            {
+              if (this.direction != "up" && this.direction != "down"){ this.endGame();}
+            }
+            else if ((this.grid[gridY][gridX].x == 0 && this.grid[gridY][gridX].y== 0) ||
+                (this.grid[gridY][gridX].x == 1 && this.grid[gridY][gridX].y== 0)||
+                (this.grid[gridY][gridX].x == 2 && this.grid[gridY][gridX].y== 0)||
+                (this.grid[gridY][gridX].x == 3 && this.grid[gridY][gridX].y==0)||
+                (this.grid[gridY][gridX].x == 3 && this.grid[gridY][gridX].y==1))
+              {
+                if (this.direction != "left" && this.direction != "right"){ this.endGame();}
+              }
+            //90 degree pipes
+            else if (this.grid[gridY][gridX].x == 1 && this.grid[gridY][gridX].y== 1)   {
+                if (this.direction == "left"){this.direction = "down";}
+                else if (this.direction == "up"){this.direction = "right";}
+                console.log("ul");
+              }
+            else if (this.grid[gridY][gridX].x == 1 && this.grid[gridY][gridX].y== 2)   {
+                if (this.direction == "left"){this.direction = "up";}
+                else if(this.direction == "down"){this.direction = "right";}
+                console.log("ll");
+              }
+            else if (this.grid[gridY][gridX].x == 2 && this.grid[gridY][gridX].y== 1)   {
+                if (this.direction == "right"){this.direction = "down";}
+                else if (this.direction == "up") {this.direction = "left";}
+                console.log("ur");
+              }
+            else if (this.grid[gridY][gridX].x == 2 && this.grid[gridY][gridX].y== 2)   {
+                if (this.direction == "right"){this.direction = "up";}
+                else if(this.direction == "down"){this.direction = "left";}
+                console.log("lr");
+              }
+              console.log(this.grid[gridY][gridX].x +","+this.grid[gridY][gridX].y);
+        }
+    }
+  }
+}
+
 Grid.prototype.place = function (pointerX, pointerY) {
   if(this.userPipes.length > 0){
     for (var gridY = 0; gridY < this.y; gridY++) {
       for (var gridX = 0; gridX < this.x; gridX++) {
         if (
           //check if in bounds of x
-          (this.x*gridX) < pointerX && (this.x*(gridX+1)) > pointerX &&
+          (this.x*gridX) <= pointerX && (this.x*(gridX+1)) > pointerX &&
           //check if in bounds of y
-          (this.y*gridY) < pointerY && ((this.y*(gridY+1))) > pointerY &&
+          (this.y*gridY) <= pointerY && ((this.y*(gridY+1))) > pointerY &&
           !this.grid[gridY][gridX])
           {
               this.grid[gridY][gridX] = this.userPipes.pop();
@@ -142,7 +254,7 @@ Grid.prototype.place = function (pointerX, pointerY) {
 Grid.prototype.render = function(time, ctx) {
   ctx.fillStyle="blue";
   ctx.fillRect(0,0,this.x,this.y);
-  ctx.fillRect(this.water.x,this.water.y,15,15);
+  ctx.fillRect(this.water.x,this.water.y,95,85);
 
   for (var y = 0; y < this.y; y++) {
     for (var x = 0; x < this.x; x++) {
@@ -160,7 +272,6 @@ Grid.prototype.render = function(time, ctx) {
     }
   }
   ctx.font="30px Verdana";
-
 
 // gradient
 var gradient=ctx.createLinearGradient(0,0,this.width,0); gradient.addColorStop("0","black");
